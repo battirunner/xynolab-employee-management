@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.routes import auth, employees, attendance, admin
+from app.api.routes import auth, employees, attendance, admin, invitations
 from app.core.config import settings
 
 app = FastAPI(
@@ -21,6 +21,7 @@ app.include_router(auth.router, prefix="/api/auth", tags=["authentication"])
 app.include_router(employees.router, prefix="/api/employees", tags=["employees"])
 app.include_router(attendance.router, prefix="/api/attendance", tags=["attendance"])
 app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
+app.include_router(invitations.router, prefix="/api/invitations", tags=["invitations"])
 
 @app.get("/")
 async def root():

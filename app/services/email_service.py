@@ -208,3 +208,65 @@ async def send_welcome_email(to_email: str, employee_name: str, username: str, t
         subject=subject,
         html_content=html_content
     )
+
+async def send_employee_invitation(to_email: str, token: str):
+    subject = "Employee Invitation - Join Our Team"
+    
+    # You'll need to replace this URL with your actual frontend URL
+    invitation_link = f"http://localhost:3000/invitation/accept?token={token}"
+    
+    html_template = Template("""
+    <html>
+    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #333;">You're Invited to Join Our Team!</h2>
+        
+        <p>Dear Future Team Member,</p>
+        
+        <p>You have been invited to join our organization as an employee. We're excited to have you on board!</p>
+        
+        <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h3 style="margin-top: 0;">What's Next?</h3>
+            <p>Click the button below to complete your registration and set up your account:</p>
+            
+            <div style="text-align: center; margin: 20px 0;">
+                <a href="{{ invitation_link }}" 
+                   style="background-color: #007bff; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+                    Complete Registration
+                </a>
+            </div>
+            
+            <p style="font-size: 12px; color: #666;">
+                If the button doesn't work, copy and paste this link into your browser:<br>
+                <a href="{{ invitation_link }}">{{ invitation_link }}</a>
+            </p>
+        </div>
+        
+        <p>During registration, you'll be able to:</p>
+        <ul>
+            <li>Set your username and password</li>
+            <li>Provide your personal information</li>
+            <li>Review your employment details</li>
+        </ul>
+        
+        <p><strong>Important:</strong> This invitation link will expire in 7 days for security purposes.</p>
+        
+        <p>If you have any questions or need assistance, please contact our HR department.</p>
+        
+        <p>We look forward to working with you!</p>
+        
+        <p>Best regards,<br>
+        {{ company_name }}</p>
+    </body>
+    </html>
+    """)
+    
+    html_content = html_template.render(
+        invitation_link=invitation_link,
+        company_name=settings.smtp_from_name
+    )
+    
+    return await send_email(
+        to_email=to_email,
+        subject=subject,
+        html_content=html_content
+    )

@@ -1,7 +1,8 @@
 from pydantic import BaseModel
 from typing import Optional
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
+from app.schemas.user import UserResponse
 
 class EmployeeBase(BaseModel):
     employee_id: str
@@ -31,6 +32,9 @@ class EmployeeUpdate(BaseModel):
 class EmployeeResponse(EmployeeBase):
     id: int
     user_id: int
+    user: Optional[UserResponse] = None
+    created_at: datetime
+    updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True

@@ -5,11 +5,13 @@ from app.core.database import get_db
 from app.core.auth import require_admin, get_password_hash
 from app.models.user import User
 from app.models.employee import Employee
+from app.models.invitation import Invitation, InvitationStatus
 from app.models.salary import SalaryRecord, SalaryStatus
 from app.schemas.user import UserCreate, UserResponse
 from app.schemas.employee import EmployeeCreate, EmployeeUpdate, EmployeeResponse
+from app.schemas.invitation import InvitationCreate, InvitationResponse
 from app.schemas.salary import SalaryRecordUpdate, SalaryRecordResponse
-from app.services.email_service import send_salary_update_notification
+from app.services.email_service import send_salary_update_notification, send_employee_invitation
 
 router = APIRouter()
 
@@ -56,25 +58,54 @@ async def get_all_employees(
     employees = db.query(Employee).all()
     return employees
 
-@router.post("/employees", response_model=EmployeeResponse)
-async def create_employee(
-    employee: EmployeeCreate,
+@router.post("/invitations", response_model=InvitationResponse)
+async def create_employee_invitation(
+    invitation: InvitationCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin)
 ):
-    user = db.query(User).filter(User.id == employee.user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+    # Check if user with email already exists
+    existing_user = db.query(User).filter(User.email == invitation.email).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="User with this email already exists")
     
-    existing_employee = db.query(Employee).filter(Employee.user_id == employee.user_id).first()
+    # Check if invitation with email already exists and is pending
+    existing_invitation = db.query(Invitation).filter(
+        Invitation.email == invitation.email,
+        Invitation.status == InvitationStatus.PENDING
+    ).first()
+    if existing_invitation:
+        raise HTTPException(status_code=400, detail="Pending invitation already exists for this email")
+    
+    # Check if employee_id already exists
+    existing_employee = db.query(Employee).filter(Employee.employee_id == invitation.employee_id).first()
     if existing_employee:
-        raise HTTPException(status_code=400, detail="Employee already exists for this user")
+        raise HTTPException(status_code=400, detail="Employee ID already exists")
     
-    db_employee = Employee(**employee.dict())
-    db.add(db_employee)
+    existing_invitation_emp_id = db.query(Invitation).filter(
+        Invitation.employee_id == invitation.employee_id
+    ).first()
+    if existing_invitation_emp_id:
+        raise HTTPException(status_code=400, detail="Employee ID already exists in pending invitations")
+    
+    # Create invitation
+    db_invitation = Invitation(**invitation.dict())
+    db.add(db_invitation)
     db.commit()
-    db.refresh(db_employee)
-    return db_employee
+    db.refresh(db_invitation)
+    
+    # Send invitation email
+    await send_employee_invitation(invitation.email, db_invitation.token)
+    
+    return db_invitation
+
+@router.get("/invitations", response_model=List[InvitationResponse])
+async def get_all_invitations(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
+    invitations = db.query(Invitation).all()
+    return invitations
 
 @router.put("/employees/{employee_id}", response_model=EmployeeResponse)
 async def update_employee(

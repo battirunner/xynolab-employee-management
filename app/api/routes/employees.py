@@ -1,6 +1,6 @@
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from app.core.database import get_db
 from app.core.auth import get_current_active_user
 from app.models.user import User
@@ -16,7 +16,7 @@ async def get_my_employee_data(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    employee = db.query(Employee).filter(Employee.user_id == current_user.id).first()
+    employee = db.query(Employee).options(joinedload(Employee.user)).filter(Employee.user_id == current_user.id).first()
     if not employee:
         raise HTTPException(status_code=404, detail="Employee record not found")
     return employee

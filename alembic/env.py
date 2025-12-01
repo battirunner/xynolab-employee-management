@@ -21,7 +21,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from app.core.database import Base
-from app.models import User, Employee, Attendance, SalaryRecord
+from app.models import User, Employee, Attendance, SalaryRecord, Invitation
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
